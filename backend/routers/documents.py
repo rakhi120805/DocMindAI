@@ -35,6 +35,16 @@ async def get_status(file_id: str, db: Session = Depends(get_db)):
         error=doc.verification_notes.get("error") if (
             doc.processing_status == "failed" and doc.verification_notes
         ) else None,
+        extracted_metadata=doc.extracted_metadata,
+        # verification_notes holds a LIST of issue strings on success
+        # (see agents/verifier_agent.py's output), but a DICT with an
+        # "error" key on failure (see pipeline_service.py's except
+        # block) - same column, two different shapes depending on
+        # outcome. Only treat it as the issues list when it's actually
+        # a list, so a failed run doesn't get misread as "0 issues."
+        verification_issues=doc.verification_notes if (
+            doc.processing_status != "failed" and isinstance(doc.verification_notes, list)
+        ) else None,
     )
 
 
@@ -47,6 +57,18 @@ async def list_documents(db: Session = Depends(get_db)):
             "filename": d.filename,
             "document_type": d.document_type,
             "processing_status": d.processing_status,
+            # These two were missing here originally - caught via a real
+            # end-to-end test hitting this endpoint directly, then
+            # comparing the response against what frontend/Sidebar.jsx
+            # actually reads. Without them, every "done" document's
+            # stamp badge in the sidebar list silently fell back to
+            # "pending" (gray), since Sidebar.jsx colors the badge from
+            # verification_status + risk_score, and both were always
+            # undefined coming from this endpoint - a real bug that
+            # pure UI mocking wouldn't have surfaced, since the mock
+            # would have just been given whatever shape I assumed.
+            "verification_status": d.verification_status,
+            "risk_score": d.risk_score,
             "uploaded_at": d.uploaded_at,
         }
         for d in docs

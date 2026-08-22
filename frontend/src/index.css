@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+/*
+  DESIGN TOKENS
+  ─────────────
+  Subject: document intelligence / verification. The world this app
+  lives in is case files, ledgers, and ink stamps - not a generic SaaS
+  dashboard. Every color/type choice below is in service of that.
+
+  - paper / ink              → the base "document" surface and text
+  - manila                   → the folder-tab accent (navigation, active states)
+  - verified/warning/risk    → literal stamp colors, used ONLY for
+    verification/risk status - never as decoration elsewhere, so they
+    keep their meaning
+  - Source Serif 4  → headers, case file titles (an official-document feel)
+  - Inter           → UI chrome, body text (quiet, readable)
+  - JetBrains Mono  → extracted data, IDs, amounts (a ledger/receipt feel)
+*/
+@theme {
+  --color-paper: #faf8f4;
+  --color-paper-dim: #f2efe8;
+  --color-ink: #201e1b;
+  --color-ink-soft: #55524c;
+  --color-manila: #c9a66b;
+  --color-manila-dark: #9c7d47;
+  --color-slate: #445063;
+  --color-slate-dim: #7c8494;
+  --color-verified: #2f6d4f;
+  --color-verified-bg: #e7f1ec;
+  --color-warning: #b4650a;
+  --color-warning-bg: #faf0e2;
+  --color-risk: #a63a3a;
+  --color-risk-bg: #f7e9e9;
+
+  --font-display: 'Source Serif 4', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Subtle paper grain - ties to the physical-document metaphor without
+   being loud. Applied once, at the page background level. */
+.paper-texture {
+  background-image: radial-gradient(circle at 1px 1px, rgba(32,30,27,0.035) 1px, transparent 0);
+  background-size: 18px 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

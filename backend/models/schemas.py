@@ -30,6 +30,8 @@ class DocumentStatusResponse(BaseModel):
     verification_status: Optional[str] = None
     risk_score: Optional[int] = None
     error: Optional[Any] = None
+    extracted_metadata: Optional[dict] = None
+    verification_issues: Optional[list] = None
 
 
 class QueryRequest(BaseModel):
