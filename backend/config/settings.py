@@ -24,23 +24,36 @@ class Settings(BaseSettings):
     environment: str = "development"  # development | production
 
     # --- Storage paths ---
-    upload_dir: Path = Path("uploads")
-    vector_store_dir: Path = Path("rag/vector_store")
+    # Consolidated under one data/ directory so a single Docker volume
+    # mount covers everything that needs to survive a restart:
+    # uploaded files, the FAISS index, and (implicitly, via
+    # database_url below) the SQLite file.
+    upload_dir: Path = Path("data/uploads")
+    vector_store_dir: Path = Path("data/vector_store")
 
     # --- Database ---
-    database_url: str = "sqlite:///./docmind.db"
+    database_url: str = "sqlite:///./data/docmind.db"
 
     # --- LLM provider ---
-    # We keep this provider-agnostic on purpose: swapping OpenAI for a
-    # local Ollama model should mean changing THIS value, not rewriting
-    # every agent.
-    llm_provider: str = "ollama"  # e.g. "openai", "anthropic", "ollama"
+    # We keep this provider-agnostic on purpose: swapping between
+    # Ollama (local dev), Groq (fast + free tier, great for a live
+    # demo), OpenAI, or Anthropic should mean changing THIS value, not
+    # rewriting every agent.
+    llm_provider: str = "ollama"  # e.g. "openai", "groq", "anthropic", "ollama"
     llm_model_name: str = "qwen2.5:7b-instruct"  # matches architecture doc's suggested model
     llm_api_key: str = ""  # unused for ollama - it's local, no key needed
     ollama_base_url: str = "http://localhost:11434"
 
     # --- OCR ---
     ocr_engine: str = "paddleocr"
+
+    # --- CORS ---
+    # "*" is fine for local dev (any origin can call the API), but in
+    # production this should be your actual deployed frontend URL -
+    # otherwise ANY website could make authenticated-looking requests
+    # to your API from a user's browser. Comma-separated for multiple
+    # origins (e.g. a Vercel preview URL + your custom domain).
+    cors_origins: str = "*"
 
     # --- Chunking ---
     chunk_size_tokens: int = 512

@@ -8,10 +8,35 @@ WHY A SEPARATE FILE FROM models.py:
 models at Postgres later by only touching this file.
 """
 
+from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from backend.database.models import Base
 from backend.config.settings import settings
+
+
+def _ensure_sqlite_directory_exists(database_url: str) -> None:
+    """
+    SQLite will create the DATABASE FILE itself if it's missing, but
+    it will NOT create missing PARENT DIRECTORIES - it just fails with
+    a fairly unhelpful "unable to open database file" error instead.
+    This bit us directly: settings.py's default database_url changed
+    to "sqlite:///./data/docmind.db" (consolidating persistent data
+    under data/ for Docker), but nothing actually created that data/
+    folder on a plain local run outside Docker (the Dockerfile's
+    `mkdir -p data/...` only applies inside the container). Same root
+    cause as needing `settings.upload_dir.mkdir(...)` in the upload
+    router - any path we read from config needs its directory
+    guaranteed to exist before something tries to write there.
+    """
+    if not database_url.startswith("sqlite:///"):
+        return  # not SQLite (e.g. Postgres in some future setup) - nothing to do
+
+    db_path = Path(database_url.replace("sqlite:///", "", 1))
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+
+_ensure_sqlite_directory_exists(settings.database_url)
 
 engine = create_engine(
     settings.database_url,

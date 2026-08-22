@@ -1,0 +1,25 @@
+# Local testing: docker compose up --build
+# This is also a useful reference for whatever cloud platform you
+# deploy to (Render/Railway typically read Dockerfile + env vars
+# directly, but the volume here documents what the container actually
+# needs to persist regardless of platform).
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME:-gpt-4o-mini}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - DATABASE_URL=sqlite:///./data/docmind.db
+    volumes:
+      # One volume covers everything that needs to survive a restart:
+      # uploaded files, the SQLite DB, and the FAISS index - all
+      # consolidated under data/ (see backend/config/settings.py).
+      - app_data:/app/data
+
+volumes:
+  app_data:

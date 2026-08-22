@@ -25,7 +25,11 @@ class LLMClient:
 
     def complete(self, prompt: str, json_mode: bool = False) -> str:
         if self.provider == "openai":
-            return self._complete_openai(prompt, json_mode)
+            return self._complete_openai_compatible(prompt, json_mode)
+        elif self.provider == "groq":
+            return self._complete_openai_compatible(
+                prompt, json_mode, base_url="https://api.groq.com/openai/v1", provider_label="Groq"
+            )
         elif self.provider == "anthropic":
             return self._complete_anthropic(prompt, json_mode)
         elif self.provider == "ollama":
@@ -34,19 +38,48 @@ class LLMClient:
             raise NotImplementedError(
                 f"LLM provider '{self.provider}' not configured. "
                 "Set llm_provider in backend/config/settings.py "
-                "(or LLM_PROVIDER env var) to one of: openai, anthropic, ollama."
+                "(or LLM_PROVIDER env var) to one of: openai, groq, anthropic, ollama."
             )
 
-    def _complete_openai(self, prompt: str, json_mode: bool) -> str:
-        # from openai import OpenAI
-        # client = OpenAI(api_key=settings.llm_api_key)
-        # response = client.chat.completions.create(
-        #     model=self.model_name,
-        #     messages=[{"role": "user", "content": prompt}],
-        #     response_format={"type": "json_object"} if json_mode else None,
-        # )
-        # return response.choices[0].message.content
-        raise NotImplementedError("pip install openai, then uncomment above")
+    def _complete_openai_compatible(
+        self, prompt: str, json_mode: bool, base_url: str = None, provider_label: str = "OpenAI"
+    ) -> str:
+        """
+        Shared implementation for any provider that speaks the same API
+        shape as OpenAI's chat completions endpoint - which includes
+        Groq, since Groq deliberately built their API to be a drop-in
+        match for OpenAI's client. This is exactly why the provider
+        list only needed one new branch (routing + a base_url), not a
+        whole new method: the WIRE FORMAT is identical, only the
+        server behind the URL differs (Groq runs open models like
+        Llama/Mixtral on custom LPU hardware, dramatically faster than
+        typical GPU inference - useful to know if asked why Groq feels
+        near-instant compared to Ollama's ~30s local CPU generation).
+
+        NOTE on json_mode with Groq specifically: only some models
+        support forced JSON output (e.g. llama-3.3-70b-versatile does,
+        smaller/older ones may not) - check Groq's current model docs
+        if complete_json() starts failing after a model change.
+        """
+        from openai import OpenAI
+
+        client = OpenAI(api_key=settings.llm_api_key, base_url=base_url)
+        try:
+            response = client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"} if json_mode else None,
+            )
+        except Exception as e:
+            # Both providers' SDKs raise their own exception types
+            # (AuthenticationError, RateLimitError, APIConnectionError,
+            # etc.) - wrapping in a RuntimeError with the original
+            # message keeps this function's error type consistent with
+            # _complete_ollama's, so callers (agents) don't need to
+            # know which provider they're talking to.
+            raise RuntimeError(f"{provider_label} API error: {e}") from e
+
+        return response.choices[0].message.content
 
     def _complete_anthropic(self, prompt: str, json_mode: bool) -> str:
         # from anthropic import Anthropic
