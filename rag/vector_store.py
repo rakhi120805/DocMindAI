@@ -30,24 +30,17 @@ from typing import List, Dict, Any, Optional
 
 
 class VectorStore:
-    def __init__(self, dimension: int = 768):
+    def __init__(self, dimension: int = 384):
         self.dimension = dimension
         self._index = None
         self._metadata: List[Dict[str, Any]] = []  # parallel array to index positions
 
-    def _load_index(self):
+    def _load_index(self, actual_dim: Optional[int] = None):
         if self._index is None:
             import faiss
-            # IndexFlatL2: brute-force exact search using L2 (Euclidean)
-            # distance. For a student project's document scale (dozens-
-            # hundreds of chunks, not millions), exact search is both
-            # fast enough AND simpler to reason about than an
-            # approximate index (like IVF or HNSW), which trades a
-            # little accuracy for speed at massive scale we don't need
-            # here. Worth mentioning if asked "would this scale?" -
-            # the answer is "swap IndexFlatL2 for IndexIVFFlat past
-            # ~100k vectors," not a rewrite.
-            self._index = faiss.IndexFlatL2(self.dimension)
+            dim = actual_dim or self.dimension
+            self.dimension = dim
+            self._index = faiss.IndexFlatL2(dim)
         return self._index
 
     def add(self, vectors: List[List[float]], metadata: List[Dict[str, Any]]):
@@ -57,7 +50,8 @@ class VectorStore:
         if not vectors:
             return
 
-        index = self._load_index()
+        dim = len(vectors[0])
+        index = self._load_index(actual_dim=dim)
         import numpy as np
         index.add(np.array(vectors).astype("float32"))
         self._metadata.extend(metadata)

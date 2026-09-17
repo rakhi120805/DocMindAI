@@ -10,7 +10,11 @@
  * not a hunt through every component.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+let rawBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '')
+if (rawBase && !rawBase.startsWith('http://') && !rawBase.startsWith('https://')) {
+  rawBase = `https://${rawBase}`
+}
+const API_BASE = rawBase
 
 class ApiError extends Error {
   constructor(message, status, detail) {

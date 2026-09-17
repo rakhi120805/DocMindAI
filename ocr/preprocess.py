@@ -18,16 +18,14 @@ from PIL import Image, ImageOps, ImageFilter
 SUPPORTED_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"}
 
 
-def load_pages_as_images(file_path: str, dpi: int = 300) -> List[Image.Image]:
+def load_pages_as_images(file_path: str, dpi: int = 150) -> List[Image.Image]:
     """
     Accepts either a PDF or a plain image file and returns a list of
     PIL Images — one per page (a plain image file is just "one page").
 
-    WHY 300 DPI: OCR accuracy improves noticeably with higher resolution
-    than a typical screen (72-150 DPI), because small/blurry characters
-    are the #1 cause of misreads. 300 DPI is the standard sweet spot
-    used by most document-scanning pipelines — high enough for accuracy,
-    not so high that render time/memory become a problem.
+    WHY 150 DPI: Provides optimal character height for PaddleOCR while
+    reducing memory consumption by 75% compared to 300 DPI, ensuring
+    the pipeline stays well under 1GB RAM limits.
     """
     path = Path(file_path)
 
@@ -70,6 +68,12 @@ def enhance_image(image: Image.Image) -> Image.Image:
     OCR worse by over-processing. Start simple, measure OCR accuracy
     (see evaluation/metrics.py), then add more only if it helps.
     """
+    # Cap maximum dimension to 2000px so high-res phone photos don't explode RAM
+    max_dim = 2000
+    if max(image.size) > max_dim:
+        image = image.copy()
+        image.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+
     gray = ImageOps.grayscale(image)
     contrasted = ImageOps.autocontrast(gray, cutoff=1)
     sharpened = contrasted.filter(ImageFilter.SHARPEN)

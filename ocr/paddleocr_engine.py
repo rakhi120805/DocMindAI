@@ -28,10 +28,7 @@ class PaddleOCREngine:
     def _load(self):
         if self._engine is None:
             from paddleocr import PaddleOCR
-            self._engine = PaddleOCR(lang=self.lang, use_angle_cls=True)
-            # use_angle_cls=True: detects and corrects text that's
-            # rotated 90/180/270 degrees - common with phone-scanned
-            # documents where orientation isn't guaranteed.
+            self._engine = PaddleOCR(lang=self.lang, use_angle_cls=False, show_log=False)
         return self._engine
 
     def extract_text(self, image: Any) -> str:
@@ -43,6 +40,7 @@ class PaddleOCREngine:
         asked about edge cases).
         """
         import numpy as np
+        import gc
 
         engine = self._load()
         result = engine.ocr(np.array(image), cls=True)
@@ -54,4 +52,6 @@ class PaddleOCREngine:
             text = line[1][0]
             lines.append(text)
 
+        del result
+        gc.collect()
         return "\n".join(lines)

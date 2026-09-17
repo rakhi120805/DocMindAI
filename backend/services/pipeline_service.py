@@ -103,6 +103,8 @@ def run_ingestion_pipeline(file_id: str, file_path: str) -> None:
         db.commit()
     finally:
         db.close()
+        import gc
+        gc.collect()
 
 
 def run_query_pipeline(file_id: str, question: str) -> dict:

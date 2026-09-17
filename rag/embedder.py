@@ -22,18 +22,14 @@ from typing import List, Optional
 
 
 class Embedder:
-    def __init__(self, model_name: str = "sentence-transformers/all-mpnet-base-v2"):
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         self.model_name = model_name
         self._model = None  # lazy-loaded
 
     def _load_model(self):
         if self._model is None:
-            # This download happens ONCE - the model (~420MB for
-            # all-mpnet-base-v2) is fetched from the Hugging Face Hub
-            # and cached locally (~/.cache/huggingface). Every run
-            # after the first loads instantly from that local cache -
-            # no network needed, no Hugging Face API calls in the
-            # actual request path.
+            # all-MiniLM-L6-v2 is lightweight (~80MB), fast, and uses
+            # minimal RAM (~120MB), making it ideal for 1GB container limits.
             from sentence_transformers import SentenceTransformer
             self._model = SentenceTransformer(self.model_name)
         return self._model

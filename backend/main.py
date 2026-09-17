@@ -21,6 +21,11 @@ import os
 # guarantees the safe order regardless of which agent runs first.
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # extra safety net
 import torch  # noqa: F401 - imported for its side effect (DLL load order), not used directly here
+torch.set_num_threads(1)
+try:
+    torch.set_num_interop_threads(1)
+except RuntimeError:
+    pass
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
