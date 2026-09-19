@@ -19,6 +19,14 @@ import os
 # (torch, via sentence-transformers) in the normal pipeline order -
 # exactly the bad order. Forcing torch to import here, at startup,
 # guarantees the safe order regardless of which agent runs first.
+# Strict low-memory flags for PaddlePaddle and CPU threads
+os.environ["FLAGS_allocator_strategy"] = "naive_best_fit"
+os.environ["FLAGS_fraction_of_cpu_memory_to_use"] = "0.05"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # extra safety net
 import torch  # noqa: F401 - imported for its side effect (DLL load order), not used directly here
 torch.set_num_threads(1)

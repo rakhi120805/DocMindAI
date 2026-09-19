@@ -36,11 +36,15 @@ class Embedder:
 
     def embed(self, text: str) -> List[float]:
         model = self._load_model()
-        return model.encode(text).tolist()
+        import torch
+        with torch.inference_mode():
+            return model.encode(text, show_progress_bar=False).tolist()
 
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
         model = self._load_model()
-        return model.encode(texts).tolist()
+        import torch
+        with torch.inference_mode():
+            return model.encode(texts, batch_size=8, show_progress_bar=False).tolist()
 
 
 # --- Singleton accessor ---
