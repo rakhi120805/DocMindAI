@@ -30,7 +30,8 @@ except RuntimeError:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.database.session import init_db
+from backend.database.session import init_db, SessionLocal
+from backend.database.models import Document
 from backend.routers import upload, query, documents, metrics
 from backend.config.settings import settings
 
@@ -54,6 +55,19 @@ app.include_router(metrics.router)
 @app.on_event("startup")
 def on_startup():
     init_db()
+    # If the container crashed or restarted while a background task was running,
+    # clean up stranded "processing" documents so the frontend doesn't poll forever.
+    db = SessionLocal()
+    try:
+        stranded = db.query(Document).filter(Document.processing_status.in_(["processing", "queued"])).all()
+        for d in stranded:
+            d.processing_status = "failed"
+            d.verification_notes = {"error": "Server restarted while processing was in flight. Please re-upload this file."}
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
     print(f"[DocMind AI] LLM provider: {settings.llm_provider} | model: {settings.llm_model_name}")
 
 
